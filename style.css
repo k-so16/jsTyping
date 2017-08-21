@@ -1,5 +1,11 @@
 @charset "utf-8";
 
+/***********************/
+/*                     */
+/*  foundation design  */
+/*                     */
+/***********************/
+
 html {
   height: 100%;
 }
@@ -8,6 +14,55 @@ body {
   margin:  0px;
   padding: 0px;
   height:  100%;
+
+  background: #ffeac8;
+}
+
+h1 {
+  margin: 0px 40px;
+  padding: 30px 0px;
+
+  color: #a83000;
+  font-family: serif;
+  font-size: 28pt;
+  font-weight: bold;
+  font-style: italic;
+}
+
+
+
+/***********************/
+/*                     */
+/*  game frame design  */
+/*                     */
+/***********************/
+
+#window {
+  width: 70%;
+  margin: 0px auto;
+  border: solid 1px;
+
+  font-size: 18pt;
+  text-align: center;
+}
+
+#answer {
+  color:       #ff0000;
+  font-weight: bold;
+}
+
+p {
+  margin:  0px;
+  padding: 5px;
+}
+
+p#message {
+  margin:  0px;
+  padding: 20px 5px;
+}
+
+div#result p {
+  font-size: 12pt;
 }
 
 
