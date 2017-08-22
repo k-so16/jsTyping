@@ -65,6 +65,15 @@ div#result p {
   font-size: 12pt;
 }
 
+p#countdown {
+  margin: 0px;
+  padding: 10px 40px;
+
+  font-size:   12pt;
+  font-weight: bold;
+  text-align:  right;
+}
+
 
 
 /***********************************************************/

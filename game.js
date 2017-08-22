@@ -1,6 +1,7 @@
 var jDict;
 var wordList;
 
+//  load dictionary data and word list data
 $.getJSON("jDict.json", data => jDict = data);
 $.getJSON("wordList.json", data => wordList = data);
 
@@ -8,6 +9,7 @@ $(() => {
   var game = new Game();
 
   $(window).on('keydown', e => {
+    // start game if space key typed
     if(String.fromCharCode(e.keyCode) == ' ') {
       game.start();
     }
@@ -15,6 +17,7 @@ $(() => {
 });
 
 
+// class of typing word quiz
 class Quiz {
   constructor() {
     var index = Math.floor(Math.random() * wordList.length);
@@ -30,6 +33,7 @@ class Quiz {
     this.word = quiz.word;
     this.ruby = quiz.ruby;
     this.roman = this.list.map(item => {
+      // a sequence of kana candidates object
       return item.getCandidate();
     }).join('');
 
@@ -53,6 +57,7 @@ class Quiz {
   checkKey(key) {
     var result = this.list[this.pos].checkKey(key);
     if(this.list[this.pos].isEndOfKana()) {
+      // increment pos if typed key reaced the end of kana
       this.pos++;
     }
 
@@ -98,7 +103,7 @@ class Roman {
 }
 
 
-
+// game window class
 class GameWindow {
   constructor(tag, attr) {
     if(attr === undefined) {
@@ -118,10 +123,6 @@ class GameWindow {
 
   append(content) {
     this.jQueryNode.append(content.jQueryNode);
-  }
-
-  appendToBody() {
-    this.jQueryNode.appendTo('body');
   }
 
   show() {
@@ -157,12 +158,13 @@ class Game {
     this.gWin = {
       frame   : new GameFrame({id : 'window'}),
       message : new GameLabel('スペースキーを押してください', {id : 'message'}),
-      word    : new GameLabel(''),
-      roman   : new GameLabel(''),
-      answer  : new GameLabel('', {id: 'answer'}),
-      result  : new GameFrame({id : 'result'}),
-      correct : new GameLabel(''),
-      wrong   : new GameLabel('')
+      word      : new GameLabel(''),
+      roman     : new GameLabel(''),
+      answer    : new GameLabel('', {id: 'answer'}),
+      result    : new GameFrame({id : 'result'}),
+      correct   : new GameLabel(''),
+      wrong     : new GameLabel(''),
+      remainder : new GameLabel('', {id: 'countdown'})
     };
     this.result = new Result();
     this.correctInput = [];
@@ -173,6 +175,7 @@ class Game {
     this.gWin.roman.hide();
     this.gWin.answer.hide();
     this.gWin.result.hide();
+    this.gWin.remainder.hide();
 
     this.gWin.result.append(this.gWin.correct);
     this.gWin.result.append(this.gWin.wrong);
@@ -182,8 +185,8 @@ class Game {
     this.gWin.frame.append(this.gWin.roman);
     this.gWin.frame.append(this.gWin.answer);
     this.gWin.frame.append(this.gWin.result);
+    this.gWin.frame.append(this.gWin.remainder);
     $('body').append(this.gWin.frame.getJqueryNode());
-    // this.gWin.frame.appendToBody();
   }
 
   start() {
@@ -194,6 +197,7 @@ class Game {
 
     (function countdown() {
       if(sec > 0) {
+        // countdown for starting game
         game.gWin.message.setText(sec--);
         setTimeout(countdown, 1000);
       } else {
@@ -202,8 +206,21 @@ class Game {
         $(window).on('keydown', e => 
           game.checkTyping(String.fromCharCode(e.keyCode)));
         setTimeout(() => game.end(), game.timeLimit);
+
+
+        sec = game.timeLimit / 1000;
+        game.gWin.remainder.show();
+        // countdown for ending game
+        (function showRemainderTime() {
+          if(sec > 0) {
+            game.gWin.remainder.setText('残り ' + (--sec) + ' 秒');
+            setTimeout(showRemainderTime, 1000);
+          } else {
+            game.end();
+          }
+         })();
       }
-    })();
+     })();
   }
 
   setNewQuiz() {
@@ -246,6 +263,7 @@ class Game {
     this.gWin.word.hide();
     this.gWin.roman.hide();
     this.gWin.answer.hide();
+    this.gWin.remainder.hide();
 
     this.gWin.message.setText('お疲れ様でした');
     this.gWin.correct.setText('正しいタイプ数: ' + this.result.getCorrect());
