@@ -17,93 +17,174 @@ $(() => {
 });
 
 
-// class of typing word quiz
-class Quiz {
+
+/************************/
+/*                      */
+/*  game manager class  */
+/*                      */
+/************************/
+
+class Game {
   constructor() {
-    var index = Math.floor(Math.random() * wordList.length);
-    var quiz = wordList[index];
+    this.timeLimit = 30 * 1000;
+    this.gWin = {
+      frame     : new GameFrame({id : 'window'}),
+      message   : new GameLabel('スペースキーを押してください', {id : 'message'}),
+      word      : new GameLabel(''),
+      roman     : new GameLabel(''),
+      answer    : new GameLabel('', {id: 'answer'}),
+      result    : new GameFrame({id : 'result'}),
+      correct   : new GameLabel(''),
+      wrong     : new GameLabel(''),
+      remainder : new GameLabel('', {id: 'countdown'})
+    };
+    this.result = new Result();
+    this.correctInput = [];
+    this.quiz;
+    this.prevWord;
 
-    this.list = [];
-    for(var i = 0; i < quiz.ruby.length; i++) {
-      this.list.push(new Roman((quiz.ruby)[i]));
-    }
-    console.log(this.list);
+    // set game window
+    this.gWin.word.hide();
+    this.gWin.roman.hide();
+    this.gWin.answer.hide();
+    this.gWin.result.hide();
+    this.gWin.remainder.hide();
 
-    this.pos = 0;
-    this.word = quiz.word;
-    this.ruby = quiz.ruby;
-    this.roman = this.list.map(item => {
-      // a sequence of kana candidates object
-      return item.getCandidate();
-    }).join('');
+    this.gWin.result.append(this.gWin.correct);
+    this.gWin.result.append(this.gWin.wrong);
 
-    console.log(this.roman);
+    this.gWin.frame.append(this.gWin.message);
+    this.gWin.frame.append(this.gWin.word);
+    this.gWin.frame.append(this.gWin.roman);
+    this.gWin.frame.append(this.gWin.answer);
+    this.gWin.frame.append(this.gWin.result);
+    this.gWin.frame.append(this.gWin.remainder);
+    $('body').append(this.gWin.frame.getJqueryNode());
   }
 
-  getWord() {
-    return this.word;
-  }
 
-  getRuby() {
-    return this.ruby;
-  }
+  start() {
+    var game = this;
+    var sec  = 3;
 
-  getRoman() {
-    return this.list.map(item => {
-      return item.getCandidate();
-    }).join('');
-  }
+    $(window).off('keydown');
 
-  checkKey(key) {
-    var result = this.list[this.pos].checkKey(key);
-    if(this.list[this.pos].isEndOfKana()) {
-      // increment pos if typed key reaced the end of kana
-      this.pos++;
-    }
-
-    return result;
-  }
-
-  isEndOfWord() {
-    return this.pos == this.list.length;
-  }
-}
+    (function countdown() {
+      if(sec > 0) {
+        // countdown for starting game
+        game.gWin.message.setText(sec--);
+        setTimeout(countdown, 1000);
+      } else {
+        game.setNewQuiz();
+        // setTimeout(() => game.end(), game.timeLimit);
+        $(window).on('keydown', e => 
+          game.checkTyping(String.fromCharCode(e.keyCode)));
+        // setTimeout(() => game.end(), game.timeLimit);
 
 
-class Roman {
-  constructor(kana) {
-    this.wordPos = 0;
-    this.candidatePos = 0;
-    this.candidates = [];
-
-    var romanList = jDict[kana];
-    for(var i = 0; i < romanList.length; i++) {
-      this.candidates.push(romanList[i]);
-    }
-  }
-
-  getCandidate() {
-    return this.candidates[this.candidatePos];
-  }
-
-  checkKey(key) {
-    for(var pos = this.candidatePos; pos < this.candidates.length; pos++) {
-      if(this.candidates[pos].charAt(this.wordPos) == key) {
-        this.candidatePos = pos;
-        this.wordPos++;
-        return true;
+        sec = game.timeLimit / 1000;
+        game.gWin.remainder.show();
+        // countdown for ending game
+        (function showRemainderTime() {
+          if(sec > 0) {
+            game.gWin.remainder.setText('残り ' + (--sec) + ' 秒');
+            setTimeout(showRemainderTime, 1000);
+          } else {
+            game.end();
+          }
+         })();
       }
-    }
-    return false;
+     })();
   }
 
-  isEndOfKana() {
-    return this.wordPos == this.candidates[this.candidatePos].length;
+
+  setNewQuiz() {
+    do {
+      // set quiz which is different from previous quiz word
+      this.quiz = new Quiz();
+    } while(this.prevWord == this.quiz.getWord());
+    this.prevWord = this.quiz.getWord();
+
+    // change game window
+    this.gWin.message.hide();
+    this.gWin.word.show();
+    this.gWin.roman.show();
+    this.gWin.answer.show();
+
+    this.gWin.word.setText(this.quiz.getWord());
+    this.gWin.roman.setText(this.quiz.getRoman());
+    this.gWin.answer.setText('&nbsp;');
+  }
+
+
+  checkTyping(key) {
+    var result = this.quiz.checkKey(key);
+    if(result) {
+      // update appropriate input method
+      this.gWin.roman.setText(this.quiz.getRoman());
+
+      // display typed key
+      this.correctInput.push(key);
+      this.gWin.answer.setText(this.correctInput.join(''));
+
+      this.result.addCorrect();
+
+      if(this.quiz.isEndOfWord()) {
+        this.setNewQuiz();
+        this.correctInput = [];
+      }
+    } else {
+      this.result.addWrong();
+    }
+
+    // console.log(result);
+  }
+
+
+  end() {
+    $(window).off('keydown');
+
+    // change game window
+    this.gWin.word.hide();
+    this.gWin.roman.hide();
+    this.gWin.answer.hide();
+    this.gWin.remainder.hide();
+
+    // show result
+    this.gWin.message.setText('お疲れ様でした');
+    this.gWin.correct.setText('正しいタイプ数: ' + this.result.getCorrect());
+    this.gWin.wrong.setText('ミスタイプ数: ' + this.result.getWrong());
+
+    this.gWin.result.show();
+    this.gWin.message.show();
+
+    // listen to retry
+    $(window).on('keydown', e => {
+      if(String.fromCharCode(e.keyCode) == ' ') {
+        this.retry();
+      }
+    });
+  }
+
+
+  retry() {
+    this.correctInput = [];
+    this.result = new Result();
+    this.preWord = '';
+
+    this.gWin.result.hide();
+    this.start();
   }
 }
 
 
-// game window class
+
+/***********************/
+/*                     */
+/*  game window class  */
+/*                     */
+/***********************/
+
 class GameWindow {
   constructor(tag, attr) {
     if(attr === undefined) {
@@ -134,6 +215,7 @@ class GameWindow {
   }  
 }
 
+
 class GameFrame extends GameWindow {
   constructor(attr) {
     super('div', attr);
@@ -152,142 +234,12 @@ class GameLabel extends GameWindow {
 }
 
 
-class Game {
-  constructor() {
-    this.timeLimit = 30 * 1000;
-    this.gWin = {
-      frame   : new GameFrame({id : 'window'}),
-      message : new GameLabel('スペースキーを押してください', {id : 'message'}),
-      word      : new GameLabel(''),
-      roman     : new GameLabel(''),
-      answer    : new GameLabel('', {id: 'answer'}),
-      result    : new GameFrame({id : 'result'}),
-      correct   : new GameLabel(''),
-      wrong     : new GameLabel(''),
-      remainder : new GameLabel('', {id: 'countdown'})
-    };
-    this.result = new Result();
-    this.correctInput = [];
-    this.quiz;
-    this.prevWord;
 
-    this.gWin.word.hide();
-    this.gWin.roman.hide();
-    this.gWin.answer.hide();
-    this.gWin.result.hide();
-    this.gWin.remainder.hide();
-
-    this.gWin.result.append(this.gWin.correct);
-    this.gWin.result.append(this.gWin.wrong);
-
-    this.gWin.frame.append(this.gWin.message);
-    this.gWin.frame.append(this.gWin.word);
-    this.gWin.frame.append(this.gWin.roman);
-    this.gWin.frame.append(this.gWin.answer);
-    this.gWin.frame.append(this.gWin.result);
-    this.gWin.frame.append(this.gWin.remainder);
-    $('body').append(this.gWin.frame.getJqueryNode());
-  }
-
-  start() {
-    var game = this;
-    var sec  = 3;
-
-    $(window).off('keydown');
-
-    (function countdown() {
-      if(sec > 0) {
-        // countdown for starting game
-        game.gWin.message.setText(sec--);
-        setTimeout(countdown, 1000);
-      } else {
-        game.setNewQuiz();
-        // setTimeout(() => game.end(), game.timeLimit);
-        $(window).on('keydown', e => 
-          game.checkTyping(String.fromCharCode(e.keyCode)));
-        setTimeout(() => game.end(), game.timeLimit);
-
-
-        sec = game.timeLimit / 1000;
-        game.gWin.remainder.show();
-        // countdown for ending game
-        (function showRemainderTime() {
-          if(sec > 0) {
-            game.gWin.remainder.setText('残り ' + (--sec) + ' 秒');
-            setTimeout(showRemainderTime, 1000);
-          } else {
-            game.end();
-          }
-         })();
-      }
-     })();
-  }
-
-  setNewQuiz() {
-    do {
-      this.quiz = new Quiz();
-    } while(this.prevWord == this.quiz.getWord());
-    this.prevWord = this.quiz.getWord();
-
-    this.gWin.message.hide();
-    this.gWin.word.show();
-    this.gWin.roman.show();
-    this.gWin.answer.show();
-
-    this.gWin.word.setText(this.quiz.getWord());
-    this.gWin.roman.setText(this.quiz.getRoman());
-    this.gWin.answer.setText('&nbsp;', true);
-  }
-
-  checkTyping(key) {
-    var result = this.quiz.checkKey(key);
-    if(result) {
-      this.gWin.roman.setText(this.quiz.getRoman());
-      this.correctInput.push(key);
-      this.gWin.answer.setText(this.correctInput.join(''));
-      this.result.addCorrect();
-      if(this.quiz.isEndOfWord()) {
-        this.setNewQuiz();
-        this.correctInput = [];
-      }
-    } else {
-      this.result.addWrong();
-    }
-
-    console.log(result);
-  }
-
-  end() {
-    $(window).off('keydown');
-
-    this.gWin.word.hide();
-    this.gWin.roman.hide();
-    this.gWin.answer.hide();
-    this.gWin.remainder.hide();
-
-    this.gWin.message.setText('お疲れ様でした');
-    this.gWin.correct.setText('正しいタイプ数: ' + this.result.getCorrect());
-    this.gWin.wrong.setText('ミスタイプ数: ' + this.result.getWrong());
-
-    this.gWin.result.show();
-    this.gWin.message.show();
-
-    $(window).on('keydown', e => {
-      if(String.fromCharCode(e.keyCode) == ' ') {
-        this.restart();
-      }
-    });
-  }
-
-  restart() {
-    this.correctInput = [];
-    this.result = new Result();
-    this.preWord = '';
-
-    this.gWin.result.hide();
-    this.start();
-  }
-}
+/**************************/
+/*                        */
+/*  result manager class  */
+/*                        */
+/**************************/
 
 class Result {
   constructor() {
@@ -309,5 +261,153 @@ class Result {
 
   addWrong() {
     this.wrong++;
+  }
+}
+
+
+
+/*******************************/
+/*                             */
+/*  input method class         */
+/*    with managing candidate  */
+/*                             */
+/*******************************/
+
+class InputMethod {
+  constructor(method) {
+    this.method    = method;
+    this.candidate = true;
+    this.length    = method.length;
+  }
+
+  getMethod() {
+    return this.method;
+  }
+
+  getKey(index) {
+    return this.method.charAt(index);
+  }
+
+  isCandidate() {
+    return this.candidate;
+  }
+
+  takeOffCandidate() {
+    this.candidate = false;
+  }
+}
+
+
+
+/******************************/
+/*                            */
+/*  kana input manager class  */
+/*                            */
+/******************************/
+
+class Roman {
+  constructor(kana) {
+    this.candidates     = [];
+    var romanCandidates = jDict[kana];
+    for(var i = 0; i < romanCandidates.length; i++) {
+      this.candidates.push(new InputMethod(romanCandidates[i]));
+    }
+
+    this.romanPos     = 0;
+    this.candidatePos = 0;
+  }
+
+  getCandidate() {
+    return this.candidates[this.candidatePos].getMethod();
+  }
+
+  checkKey(key) {
+    for(var pos = this.candidatePos; pos < this.candidates.length; pos++) {
+      if(this.candidates[pos].getKey(this.romanPos) == key) {
+        if(this.candidates[pos].isCandidate()) {
+          // check candidate
+          for(var i = pos; i < this.candidates.length; i++) {
+            if(this.candidates[i].getKey(this.romanPos) != key) {
+              this.candidates[i].takeOffCandidate();
+            }
+          }
+
+          // modify position
+          this.candidatePos = pos;
+          this.romanPos++;
+          return true;
+        }
+      }
+    }
+
+    return false;
+  }
+
+
+  isEndOfKana() {
+    return this.romanPos == this.candidates[this.candidatePos].length;
+  }
+}
+
+
+
+/***********************/
+/*                     */
+/*  quiz string class  */
+/*                     */
+/***********************/
+class Quiz {
+  constructor() {
+    var index = Math.floor(Math.random() * wordList.length);
+    var quiz = wordList[index];
+
+    this.list = [];
+    for(var i = 0; i < quiz.ruby.length; i++) {
+      this.list.push(new Roman((quiz.ruby)[i]));
+    }
+
+    this.pos = 0;
+    this.word = quiz.word;
+    this.ruby = quiz.ruby;
+    this.roman = this.list.map(item => {
+      // a sequence of kana candidates object
+      // console.log(item.getCandidate());
+      return item.getCandidate();
+    }).join('');
+
+    // console.log(this.roman);
+  }
+
+  getWord() {
+    return this.word;
+  }
+
+  getRuby() {
+    return this.ruby;
+  }
+
+  getRoman() {
+    /*
+    return this.list.map(item => {
+      return item.getCandidate();
+    }).join('');
+     */
+    return this.list.map(item => {
+      return item.getCandidate();
+    }).join('');
+  }
+
+  checkKey(key) {
+    var result = this.list[this.pos].checkKey(key);
+    if(this.list[this.pos].isEndOfKana()) {
+      // increment pos if typed key reaced the end of kana
+      this.pos++;
+    }
+
+    return result;
+  }
+
+  isEndOfWord() {
+    return this.pos == this.list.length;
   }
 }
