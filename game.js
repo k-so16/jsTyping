@@ -31,6 +31,7 @@ class Game {
       frame     : new GameFrame({id : 'window'}),
       message   : new GameLabel('スペースキーを押してください', {id : 'message'}),
       word      : new GameLabel(''),
+      ruby      : new GameLabel('', {id: 'ruby'}),
       roman     : new GameLabel(''),
       answer    : new GameLabel('', {id: 'answer'}),
       result    : new GameFrame({id : 'result'}),
@@ -45,6 +46,7 @@ class Game {
 
     // set game window
     this.gWin.word.hide();
+    this.gWin.ruby.hide();
     this.gWin.roman.hide();
     this.gWin.answer.hide();
     this.gWin.result.hide();
@@ -54,6 +56,7 @@ class Game {
     this.gWin.result.append(this.gWin.wrong);
 
     this.gWin.frame.append(this.gWin.message);
+    this.gWin.frame.append(this.gWin.ruby);
     this.gWin.frame.append(this.gWin.word);
     this.gWin.frame.append(this.gWin.roman);
     this.gWin.frame.append(this.gWin.answer);
@@ -107,10 +110,12 @@ class Game {
 
     // change game window
     this.gWin.message.hide();
+    this.gWin.ruby.show();
     this.gWin.word.show();
     this.gWin.roman.show();
     this.gWin.answer.show();
 
+    this.gWin.ruby.setText(this.quiz.getRuby());
     this.gWin.word.setText(this.quiz.getWord());
     this.gWin.roman.setText(this.quiz.getRoman());
     this.gWin.answer.setText('&nbsp;');
@@ -146,6 +151,7 @@ class Game {
 
     // change game window
     this.gWin.word.hide();
+    this.gWin.ruby.hide();
     this.gWin.roman.hide();
     this.gWin.answer.hide();
     this.gWin.remainder.hide();

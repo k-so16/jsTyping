@@ -61,6 +61,10 @@ p#message {
   padding: 20px 5px;
 }
 
+p#ruby {
+  font-size: 12pt;
+}
+
 div#result p {
   font-size: 12pt;
 }
