@@ -51,6 +51,10 @@ h1 {
   font-weight: bold;
 }
 
+.blink {
+  background: #ffa066;
+}
+
 p {
   margin:  0px;
   padding: 5px;

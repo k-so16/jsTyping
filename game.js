@@ -140,6 +140,7 @@ class Game {
       }
     } else {
       this.result.addWrong();
+      this.gWin.frame.blink("blink");
     }
 
     // console.log(result);
@@ -218,13 +219,18 @@ class GameWindow {
 
   hide() {
     this.jQueryNode.hide();
-  }  
+  }
 }
 
 
 class GameFrame extends GameWindow {
   constructor(attr) {
     super('div', attr);
+  }
+
+  blink(blink_class) {
+    this.jQueryNode.addClass(blink_class);
+    setTimeout(() => this.jQueryNode.removeClass(blink_class), 100);
   }
 }
 
