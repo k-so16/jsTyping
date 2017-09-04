@@ -318,11 +318,16 @@ class InputMethod {
 /******************************/
 
 class Roman {
-  constructor(kana) {
+  constructor(kana, methods) {
     this.candidates     = [];
-    var romanCandidates = jDict[kana];
-    for(var i = 0; i < romanCandidates.length; i++) {
-      this.candidates.push(new InputMethod(romanCandidates[i]));
+    if(methods) {
+      this.candidates = methods.map(method => new InputMethod(method));
+    } else {
+      var romanCandidates = jDict[kana];
+      // console.log(kana);
+      for(var i = 0; i < romanCandidates.length; i++) {
+        this.candidates.push(new InputMethod(romanCandidates[i]));
+      }
     }
 
     this.romanPos     = 0;
@@ -375,7 +380,14 @@ class Quiz {
 
     this.list = [];
     for(var i = 0; i < quiz.ruby.length; i++) {
-      this.list.push(new Roman((quiz.ruby)[i]));
+      if(i + 1 < quiz.ruby.length && (quiz.ruby)[i+1].match(/[ゃゅょ]/)) {
+        if(jDict[(quiz.ruby)[i]+(quiz.ruby)[i+1]]) {
+          this.list.push(new Roman((quiz.ruby)[i]+(quiz.ruby)[i+1]));
+        }
+        i++;
+      } else {
+        this.list.push(new Roman((quiz.ruby)[i]));
+      }
     }
 
     this.pos = 0;
@@ -399,11 +411,6 @@ class Quiz {
   }
 
   getRoman() {
-    /*
-    return this.list.map(item => {
-      return item.getCandidate();
-    }).join('');
-     */
     return this.list.map(item => {
       return item.getCandidate();
     }).join('');
