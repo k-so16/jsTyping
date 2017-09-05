@@ -79,10 +79,8 @@ class Game {
         setTimeout(countdown, 1000);
       } else {
         game.setNewQuiz();
-        // setTimeout(() => game.end(), game.timeLimit);
         $(window).on('keydown', e => 
           game.checkTyping(String.fromCharCode(e.keyCode)));
-        // setTimeout(() => game.end(), game.timeLimit);
 
 
         sec = game.timeLimit / 1000;
@@ -380,10 +378,26 @@ class Quiz {
 
     this.list = [];
     for(var i = 0; i < quiz.ruby.length; i++) {
+      // check if next character is small kana
       if(i + 1 < quiz.ruby.length && (quiz.ruby)[i+1].match(/[ゃゅょ]/)) {
-        if(jDict[(quiz.ruby)[i]+(quiz.ruby)[i+1]]) {
-          this.list.push(new Roman((quiz.ruby)[i]+(quiz.ruby)[i+1]));
+        var complexKana = (quiz.ruby)[i] + (quiz.ruby)[i+1];
+        var methods     = [];
+        if(jDict[complexKana]) {
+          // this.list.push(new Roman(complexKana));
+          methods = jDict[complexKana];
         }
+
+        // create answer candidate of being typed each kana
+        var first   = jDict[(quiz.ruby)[i]];
+        var second  = jDict[(quiz.ruby)[i+1]];
+        for(var j = 0; j < first.length; j++) {
+          for(var k = 0; k < second.length; k++) {
+            // var method = first[j] + second[k];
+            methods.push(first[j] + second[k]);
+          }
+        }
+        this.list.push(new Roman(complexKana, methods));
+
         i++;
       } else {
         this.list.push(new Roman((quiz.ruby)[i]));
