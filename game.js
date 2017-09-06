@@ -10,7 +10,7 @@ $(() => {
 
   $(window).on('keydown', e => {
     // start game if space key typed
-    if(String.fromCharCode(e.keyCode) == ' ') {
+    if(e.originalEvent.key == ' ') {
       game.start();
     }
   });
@@ -80,7 +80,8 @@ class Game {
       } else {
         game.setNewQuiz();
         $(window).on('keydown', e => 
-          game.checkTyping(String.fromCharCode(e.keyCode)));
+          // game.checkTyping(String.fromCharCode(e.keyCode)));
+          game.checkTyping(e.originalEvent.key));
 
 
         sec = game.timeLimit / 1000;
@@ -156,7 +157,8 @@ class Game {
     this.gWin.remainder.hide();
 
     // show result
-    this.gWin.message.setText('お疲れ様でした');
+    this.gWin.message.setText(
+      'お疲れ様でした<br>スペースキーを押して再挑戦');
     this.gWin.correct.setText('正しいタイプ数: ' + this.result.getCorrect());
     this.gWin.wrong.setText('ミスタイプ数: ' + this.result.getWrong());
 
@@ -165,7 +167,8 @@ class Game {
 
     // listen to retry
     $(window).on('keydown', e => {
-      if(String.fromCharCode(e.keyCode) == ' ') {
+      // if(String.fromCharCode(e.keyCode) == ' ') {
+      if(e.originalEvent.key == ' ') {
         this.retry();
       }
     });
