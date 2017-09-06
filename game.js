@@ -381,8 +381,29 @@ class Quiz {
 
     this.list = [];
     for(var i = 0; i < quiz.ruby.length; i++) {
-      // check if next character is small kana
-      if(i + 1 < quiz.ruby.length && (quiz.ruby)[i+1].match(/[ゃゅょ]/)) {
+      if((quiz.ruby)[i] == 'ん') {
+        if(i + 1 < quiz.ruby.length) {
+          // check whether default pattern or not
+          if((quiz.ruby)[i+1].match(/[あいうえおなにぬねのやゆよん]/)) {
+            this.list.push(new Roman((quiz.ruby)[i]));
+          } else {
+            var next       = quiz.ruby[i+1];
+            var candidates = jDict[next];
+            var additional = candidates.map(item => "n" + item);
+            additional.map(item => candidates.push(item));
+
+            this.list.push(new Roman((quiz.ruby)[i], ["n"]));
+            this.list.push(new Roman((quiz.ruby)[i+1], candidates));
+
+            i++;
+          }
+        } else {
+          // set default candidates if last character
+          this.list.push(new Roman((quiz.ruby)[i]));
+        }
+      } else if(i + 1 < quiz.ruby.length
+                  && (quiz.ruby)[i+1].match(/[ゃゅょ]/)) {
+        // check if next character is small kana
         var complexKana = (quiz.ruby)[i] + (quiz.ruby)[i+1];
         var methods     = [];
         if(jDict[complexKana]) {
