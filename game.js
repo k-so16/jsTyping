@@ -62,7 +62,8 @@ class Game {
     this.gWin.frame.append(this.gWin.answer);
     this.gWin.frame.append(this.gWin.result);
     this.gWin.frame.append(this.gWin.remainder);
-    $('body').append(this.gWin.frame.getJqueryNode());
+    // $('body').append(this.gWin.frame.getJqueryNode());
+    $('#gamePanel').append(this.gWin.frame.getJqueryNode());
   }
 
 
@@ -383,7 +384,7 @@ class Quiz {
     for(var i = 0; i < quiz.ruby.length; i++) {
       if((quiz.ruby)[i] == 'ん') {
         if(i + 1 < quiz.ruby.length) {
-          // check whether default pattern or not
+          // check whether default pattern or not based on next kana
           if((quiz.ruby)[i+1].match(/[あいうえおなにぬねのやゆよん]/)) {
             this.list.push(new Roman((quiz.ruby)[i]));
           } else {
@@ -399,6 +400,18 @@ class Quiz {
           }
         } else {
           // set default candidates if last character
+          this.list.push(new Roman((quiz.ruby)[i]));
+        }
+      } else if((quiz.ruby)[i] == 'っ') {
+        if(i + 1 < quiz.ruby.length) {
+          if((quiz.ruby)[i+1].match(/[あいうえおなにぬねのやゆよん]/)) {
+            this.list.push(new Roman((quiz.ruby)[i]));
+          } else {
+            var nextKey = jDict[(quiz.ruby)[i+1]].map(key => key[0]);
+            jDict[(quiz.ruby)[i]].map(method => nextKey.push(method));
+            this.list.push(new Roman((quiz.ruby)[i], nextKey));
+          }
+        } else {
           this.list.push(new Roman((quiz.ruby)[i]));
         }
       } else if(i + 1 < quiz.ruby.length
