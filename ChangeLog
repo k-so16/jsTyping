@@ -1,3 +1,11 @@
+2017-09-11  Soichiro Kato  <m17se004@m.nanzan-u.ac.jp>
+
+	* ver. alpha-1.2.0
+	* changed quiz and answer string from uppercase to lowercase
+	* added ruby above quiz word
+	* added quiz words
+	* coped with most of small kana input
+
 2017-09-05  Soichiro Kato  <m17se004@m.nanzan-u.ac.jp>
 
 	* ver. alpha-1.1.0
