@@ -10,7 +10,7 @@ $(() => {
 
   $(window).on('keydown', e => {
     // start game if space key typed
-    if(String.fromCharCode(e.keyCode) == ' ') {
+    if(e.originalEvent.key == ' ') {
       game.start();
     }
   });
@@ -62,7 +62,8 @@ class Game {
     this.gWin.frame.append(this.gWin.answer);
     this.gWin.frame.append(this.gWin.result);
     this.gWin.frame.append(this.gWin.remainder);
-    $('body').append(this.gWin.frame.getJqueryNode());
+    // $('body').append(this.gWin.frame.getJqueryNode());
+    $('#gamePanel').append(this.gWin.frame.getJqueryNode());
   }
 
 
@@ -80,7 +81,8 @@ class Game {
       } else {
         game.setNewQuiz();
         $(window).on('keydown', e => 
-          game.checkTyping(String.fromCharCode(e.keyCode)));
+          // game.checkTyping(String.fromCharCode(e.keyCode)));
+          game.checkTyping(e.originalEvent.key));
 
 
         sec = game.timeLimit / 1000;
@@ -156,7 +158,8 @@ class Game {
     this.gWin.remainder.hide();
 
     // show result
-    this.gWin.message.setText('お疲れ様でした');
+    this.gWin.message.setText(
+      'お疲れ様でした<br>スペースキーを押して再挑戦');
     this.gWin.correct.setText('正しいタイプ数: ' + this.result.getCorrect());
     this.gWin.wrong.setText('ミスタイプ数: ' + this.result.getWrong());
 
@@ -165,7 +168,8 @@ class Game {
 
     // listen to retry
     $(window).on('keydown', e => {
-      if(String.fromCharCode(e.keyCode) == ' ') {
+      // if(String.fromCharCode(e.keyCode) == ' ') {
+      if(e.originalEvent.key == ' ') {
         this.retry();
       }
     });
@@ -378,8 +382,41 @@ class Quiz {
 
     this.list = [];
     for(var i = 0; i < quiz.ruby.length; i++) {
-      // check if next character is small kana
-      if(i + 1 < quiz.ruby.length && (quiz.ruby)[i+1].match(/[ゃゅょ]/)) {
+      if((quiz.ruby)[i] == 'ん') {
+        if(i + 1 < quiz.ruby.length) {
+          // check whether default pattern or not based on next kana
+          if((quiz.ruby)[i+1].match(/[あいうえおなにぬねのやゆよん]/)) {
+            this.list.push(new Roman((quiz.ruby)[i]));
+          } else {
+            var next       = quiz.ruby[i+1];
+            var candidates = jDict[next];
+            var additional = candidates.map(item => "n" + item);
+            additional.map(item => candidates.push(item));
+
+            this.list.push(new Roman((quiz.ruby)[i], ["n"]));
+            this.list.push(new Roman((quiz.ruby)[i+1], candidates));
+
+            i++;
+          }
+        } else {
+          // set default candidates if last character
+          this.list.push(new Roman((quiz.ruby)[i]));
+        }
+      } else if((quiz.ruby)[i] == 'っ') {
+        if(i + 1 < quiz.ruby.length) {
+          if((quiz.ruby)[i+1].match(/[あいうえおなにぬねのやゆよん]/)) {
+            this.list.push(new Roman((quiz.ruby)[i]));
+          } else {
+            var nextKey = jDict[(quiz.ruby)[i+1]].map(key => key[0]);
+            jDict[(quiz.ruby)[i]].map(method => nextKey.push(method));
+            this.list.push(new Roman((quiz.ruby)[i], nextKey));
+          }
+        } else {
+          this.list.push(new Roman((quiz.ruby)[i]));
+        }
+      } else if(i + 1 < quiz.ruby.length
+                  && (quiz.ruby)[i+1].match(/[ゃゅょ]/)) {
+        // check if next character is small kana
         var complexKana = (quiz.ruby)[i] + (quiz.ruby)[i+1];
         var methods     = [];
         if(jDict[complexKana]) {
