@@ -3,7 +3,7 @@ var wordList;
 var debug = false;
 
 //  load dictionary data and word list data
-$.getJSON("jDict.json", data => jDict = data);
+$.getJSON("jDict.json",    data => jDict    = data);
 $.getJSON("wordList.json", data => wordList = data);
 
 $(() => {
@@ -30,10 +30,20 @@ $(() => {
 
 class Game {
   constructor() {
-    this.timeLimit = 30 * 1000;
+    this.timeLimit    = 30 * 1000;    // use millisecond for setTimeout()
+    this.result       = new Result();
+    this.correctInput = [];
+    this.quiz;
+    this.prevWord;
+
+    this.initWindow();
+  }
+
+  initWindow() {
     this.gWin = {
       frame     : new GameFrame({id : 'window'}),
-      message   : new GameLabel('スペースキーを押してください', {id : 'message'}),
+      message   : new GameLabel(
+                    'スペースキーを押してください', {id : 'message'}),
       word      : new GameLabel(''),
       ruby      : new GameLabel('', {id: 'ruby'}),
       roman     : new GameLabel(''),
@@ -43,12 +53,7 @@ class Game {
       wrong     : new GameLabel(''),
       remainder : new GameLabel('', {id: 'countdown'})
     };
-    this.result = new Result();
-    this.correctInput = [];
-    this.quiz;
-    this.prevWord;
 
-    // set game window
     this.gWin.word.hide();
     this.gWin.ruby.hide();
     this.gWin.roman.hide();
@@ -69,7 +74,6 @@ class Game {
     // $('body').append(this.gWin.frame.getJqueryNode());
     $('#gamePanel').append(this.gWin.frame.getJqueryNode());
   }
-
 
   start() {
     var game = this;
@@ -434,7 +438,7 @@ class Quiz {
         }
       }
     } else {
-      return [new Roman((quiz.ruby)[i])];
+      return [new Roman((quiz.ruby)[index])];
     }
   }
 
@@ -469,7 +473,8 @@ class Quiz {
       }
     } else {
       // set default candidates if last character
-      this.list.push(new Roman(ruby[i]));
+      // this.list.push(new Roman(ruby[index]));
+      return [new Roman(ruby[index])];
     }
   }
 
