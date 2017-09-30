@@ -1,8 +1,9 @@
 var jDict;
 var wordList;
+var debug = false;
 
 //  load dictionary data and word list data
-$.getJSON("jDict.json", data => jDict = data);
+$.getJSON("jDict.json",    data => jDict    = data);
 $.getJSON("wordList.json", data => wordList = data);
 
 $(() => {
@@ -12,6 +13,9 @@ $(() => {
     // start game if space key typed
     if(e.originalEvent.key == ' ') {
       game.start();
+    } else if(e.originalEvent.key == 'd') {
+      debug = !debug;
+      console.log('debug: ' + ((debug) ? 'On' : 'Off'));
     }
   });
 });
@@ -26,10 +30,20 @@ $(() => {
 
 class Game {
   constructor() {
-    this.timeLimit = 30 * 1000;
+    this.timeLimit    = 30 * 1000;    // use millisecond for setTimeout()
+    this.result       = new Result();
+    this.correctInput = [];
+    this.quiz;
+    this.prevWord;
+
+    this.initWindow();
+  }
+
+  initWindow() {
     this.gWin = {
       frame     : new GameFrame({id : 'window'}),
-      message   : new GameLabel('スペースキーを押してください', {id : 'message'}),
+      message   : new GameLabel(
+                    'スペースキーを押してください', {id : 'message'}),
       word      : new GameLabel(''),
       ruby      : new GameLabel('', {id: 'ruby'}),
       roman     : new GameLabel(''),
@@ -39,12 +53,7 @@ class Game {
       wrong     : new GameLabel(''),
       remainder : new GameLabel('', {id: 'countdown'})
     };
-    this.result = new Result();
-    this.correctInput = [];
-    this.quiz;
-    this.prevWord;
 
-    // set game window
     this.gWin.word.hide();
     this.gWin.ruby.hide();
     this.gWin.roman.hide();
@@ -66,7 +75,6 @@ class Game {
     $('#gamePanel').append(this.gWin.frame.getJqueryNode());
   }
 
-
   start() {
     var game = this;
     var sec  = 3;
@@ -80,8 +88,7 @@ class Game {
         setTimeout(countdown, 1000);
       } else {
         game.setNewQuiz();
-        $(window).on('keydown', e => 
-          // game.checkTyping(String.fromCharCode(e.keyCode)));
+        $(window).on('keydown', e =>
           game.checkTyping(e.originalEvent.key));
 
 
@@ -142,8 +149,6 @@ class Game {
       this.result.addWrong();
       this.gWin.frame.blink("blink");
     }
-
-    // console.log(result);
   }
 
 
@@ -168,7 +173,6 @@ class Game {
 
     // listen to retry
     $(window).on('keydown', e => {
-      // if(String.fromCharCode(e.keyCode) == ' ') {
       if(e.originalEvent.key == ' ') {
         this.retry();
       }
@@ -383,58 +387,25 @@ class Quiz {
     this.list = [];
     for(var i = 0; i < quiz.ruby.length; i++) {
       if((quiz.ruby)[i] == 'ん') {
-        if(i + 1 < quiz.ruby.length) {
-          // check whether default pattern or not based on next kana
-          if((quiz.ruby)[i+1].match(/[あいうえおなにぬねのやゆよん]/)) {
-            this.list.push(new Roman((quiz.ruby)[i]));
-          } else {
-            var next       = quiz.ruby[i+1];
-            var candidates = jDict[next];
-            var additional = candidates.map(item => "n" + item);
-            additional.map(item => candidates.push(item));
-
-            this.list.push(new Roman((quiz.ruby)[i], ["n"]));
-            this.list.push(new Roman((quiz.ruby)[i+1], candidates));
-
-            i++;
-          }
-        } else {
-          // set default candidates if last character
-          this.list.push(new Roman((quiz.ruby)[i]));
+        var list = this.addSyllabicNasal2List(quiz.ruby, i);
+        for(var idx = 0; idx < list.length; idx++) {
+          this.list.push(list[idx]);
         }
+
+        // adjust index
+        if(i + 2 < quiz.ruby.length) {
+          if(list.length > 1) {
+            i += (((quiz.ruby)[i+2].match(/[ゃゅょ]/)) ? 2 : 1);
+          }
+        } else if(list.length > 1) {
+          i++;
+        }
+
       } else if((quiz.ruby)[i] == 'っ') {
-        if(i + 1 < quiz.ruby.length) {
-          if((quiz.ruby)[i+1].match(/[あいうえおなにぬねのやゆよん]/)) {
-            this.list.push(new Roman((quiz.ruby)[i]));
-          } else {
-            var nextKey = jDict[(quiz.ruby)[i+1]].map(key => key[0]);
-            jDict[(quiz.ruby)[i]].map(method => nextKey.push(method));
-            this.list.push(new Roman((quiz.ruby)[i], nextKey));
-          }
-        } else {
-          this.list.push(new Roman((quiz.ruby)[i]));
-        }
+        this.list.push((this.addDoubleConsonant2List(quiz.ruby, i))[0]);
       } else if(i + 1 < quiz.ruby.length
                   && (quiz.ruby)[i+1].match(/[ゃゅょ]/)) {
-        // check if next character is small kana
-        var complexKana = (quiz.ruby)[i] + (quiz.ruby)[i+1];
-        var methods     = [];
-        if(jDict[complexKana]) {
-          // this.list.push(new Roman(complexKana));
-          methods = jDict[complexKana];
-        }
-
-        // create answer candidate of being typed each kana
-        var first   = jDict[(quiz.ruby)[i]];
-        var second  = jDict[(quiz.ruby)[i+1]];
-        for(var j = 0; j < first.length; j++) {
-          for(var k = 0; k < second.length; k++) {
-            // var method = first[j] + second[k];
-            methods.push(first[j] + second[k]);
-          }
-        }
-        this.list.push(new Roman(complexKana, methods));
-
+        this.list.push((this.addComplexKana2List(quiz.ruby, i))[0]);
         i++;
       } else {
         this.list.push(new Roman((quiz.ruby)[i]));
@@ -446,11 +417,85 @@ class Quiz {
     this.ruby = quiz.ruby;
     this.roman = this.list.map(item => {
       // a sequence of kana candidates object
-      // console.log(item.getCandidate());
       return item.getCandidate();
     }).join('');
+  }
 
-    // console.log(this.roman);
+  // doubel consonant (small tsu)
+  addDoubleConsonant2List(ruby, index) {
+    if(index + 1 < ruby.length) {
+      if(ruby[index+1].match(/[あいうえおなにぬねのやゆよん]/)) {
+        return [new Roman(ruby[index])];
+      } else {
+        if(index + 2 < ruby.length && ruby[index+2].match(/[ゃゅょ]/)) {
+          var next = jDict[ruby[index+1]+ruby[index+2]].map(key => key[0]);
+          jDict[ruby[index]].map(method => next.push(method));
+          return [new Roman(ruby[index], next)];
+        } else {
+          var next = jDict[ruby[index+1]].map(key => key[0]);
+          jDict[ruby[index]].map(method => next.push(method));
+          return [new Roman(ruby[index], next)];
+        }
+      }
+    } else {
+      return [new Roman((quiz.ruby)[index])];
+    }
+  }
+
+  // syllabic nasal (m, n sound)
+  addSyllabicNasal2List(ruby, index) {
+    if(index + 1 < ruby.length) {
+      // check whether default pattern or not based on next kana
+      if(ruby[index+1].match(/[あいうえおなにぬねのやゆよん]/)) {
+        return [new Roman(ruby[index])];
+      } else {
+        if(index + 2 < ruby.length && ruby[index+2].match(/[ゃゅょ]/)) {
+          if(debug) {
+            console.log(index + 2 + ': ' + ruby[index+2]);
+          }
+          var candidates = jDict[ruby[index+1]+ruby[index+2]];
+          var additional = candidates.map(item => "n" + item);
+          additional.map(item => candidates.push(item));
+          return [
+            new Roman(ruby[index],                   ["n"]),
+            new Roman(ruby[index+1] + ruby[index+2], candidates)
+          ];
+        } else {
+          var candidates = jDict[ruby[index+1]];
+          var additional = candidates.map(item => "n" + item);
+          additional.map(item => candidates.push(item));
+
+          return [
+            new Roman(ruby[index],   ["n"]),
+            new Roman(ruby[index+1], candidates)
+          ];
+        }
+      }
+    } else {
+      // set default candidates if last character
+      // this.list.push(new Roman(ruby[index]));
+      return [new Roman(ruby[index])];
+    }
+  }
+
+  // small kana
+  addComplexKana2List(ruby, index) {
+    // check if next character is small kana
+    var complexKana = ruby[index] + ruby[index+1];
+    var methods     = [];
+    if(jDict[complexKana]) {
+      methods = jDict[complexKana];
+    }
+
+    // create answer candidate of being typed each kana
+    var first   = jDict[ruby[index]];
+    var second  = jDict[ruby[index+1]];
+    for(var i = 0; i < first.length; i++) {
+      for(var j = 0; j < second.length; j++) {
+        methods.push(first[i] + second[j]);
+      }
+    }
+    return [new Roman(complexKana, methods)];
   }
 
   getWord() {
