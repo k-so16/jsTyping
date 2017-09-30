@@ -1,6 +1,6 @@
 # jsTyping
 This is an easy typing game implemented by JavaScript.
-This is version alpha-1.2.0.
+This is version alpha-1.2.1.
 
 ## How To Play
 1. Type space key. Then countdown will be started. Wait 3 seconds.
